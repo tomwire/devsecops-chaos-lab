@@ -194,9 +194,12 @@ jobs:
           fail-build: false
       - name: Verify Grype SARIF exists
         run: |
-          ls -la *.sarif 2>/dev/null || echo "No SARIF files in root"
+          echo "=== All files ==="
+          find . -name "*.sarif" -type f 2>/dev/null | head -20
+          echo "=== Root dir listing ==="
+          ls -la *.sarif 2>/dev/null || echo "No .sarif in root"
           if [ ! -f "grype-results.sarif" ]; then
-            echo "ERROR: grype-results.sarif not found in workflow root!"
+            echo "ERROR: grype-results.sarif not found!"
             exit 1
           fi
 
