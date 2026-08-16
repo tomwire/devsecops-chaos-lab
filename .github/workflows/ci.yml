@@ -31,14 +31,14 @@ jobs:
       # Portfolio mode: build local image without ECR
       - name: Build application image (portfolio mode)
         id: build-local
-        if: ${{ secrets.AWS_ROLE_ARN == '' || secrets.AWS_ROLE_ARN == null }}
+        if: ${{ secrets.AWS_ROLE_ARN == '' }}
         run: |
           docker build -t $IMAGE_NAME:test ./src/
 
       # Conditional ECR push when credentials configured
       - name: Configure AWS credentials for ECR
         id: aws-auth
-        if: ${{ secrets.AWS_ROLE_ARN != '' && secrets.AWS_ROLE_ARN != null }}
+        if: ${{ secrets.AWS_ROLE_ARN != '' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
@@ -58,12 +58,22 @@ jobs:
           docker tag $IMAGE_NAME:$GITHUB_SHA $REGISTRY/$IMAGE_NAME:$GITHUB_SHA
           docker push $REGISTRY/$IMAGE_NAME:$GITHUB_SHA
 
-      # Trivy scan — try ECR image first, fallback to local if needed
+      # Trivy scan — portfolio mode uses local image, production uses ECR
+      - name: Run Trivy container scan
+        if: steps.build-local.outcome != 'success'
+        run: |
+          if [ "$REGISTRY" = "" ]; then
+            echo "Portfolio mode — scanning local image"
+            docker build -t $IMAGE_NAME:test ./src/
+          fi
+          docker tag $IMAGE_NAME:test docker.io/library/$IMAGE_NAME:test 2>/dev/null || true
+
+      # Use Trivy action for SARIF output
       - name: Run Trivy scan (ECR or local)
-        id: trivy
+        if: always()
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.aws-auth.outcome == 'success' && format('{0}/{1}:{2}', steps.login-ecr.outputs.registry, env.IMAGE_NAME, github.sha) || format('docker.io/library/{0}:test', env.IMAGE_NAME) }}
+          image-ref: "docker.io/library/${IMAGE_NAME}:test"
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
