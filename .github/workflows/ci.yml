@@ -185,23 +185,17 @@ jobs:
           grype db update || true  # non-fatal if DB is already current
 
       - name: Run Grype dependency scan
+        id: grype
         uses: anchore/scan-action@v5.0.1
         with:
           path: "./src"
           output-format: sarif
-          output-file: grype-results.sarif
           severity-cutoff: critical
           fail-build: false
       - name: Verify Grype SARIF exists
         run: |
-          echo "=== All files ==="
-          find . -name "*.sarif" -type f 2>/dev/null | head -20
-          echo "=== Root dir listing ==="
-          ls -la *.sarif 2>/dev/null || echo "No .sarif in root"
-          if [ ! -f "grype-results.sarif" ]; then
-            echo "ERROR: grype-results.sarif not found!"
-            exit 1
-          fi
+          echo "SARIF path from action output: ${{ steps.grype.outputs.sarif }}"
+          [ -f "${{ steps.grype.outputs.sarif }}" ] || { echo "ERROR: SARIF not found at ${{ steps.grype.outputs.sarif }}!"; exit 1; }
 
       - name: Upload Grype results to GitHub Security
         if: success()
