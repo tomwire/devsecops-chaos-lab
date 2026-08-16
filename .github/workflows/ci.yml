@@ -186,8 +186,10 @@ jobs:
 
       - name: Run Grype dependency scan
         run: |
-          set +e  # Disable exit-on-error so we capture SARIF even if vulnerabilities found
-          grype scan ./src --output-file grype-results.sarif --format sarif 2>/dev/null || true
+          set +e
+          grype scan ./src --output-format sarif > grype-results.sarif
+          # Ensure SARIF file exists (create empty if grype produced no output)
+          [ -f grype-results.sarif ] || touch grype-results.sarif
 
       - name: Upload Grype results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
