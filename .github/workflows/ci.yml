@@ -187,7 +187,7 @@ jobs:
       - name: Run Grype dependency scan
         run: |
           set +e
-          grype scan ./src --output-format sarif > grype-results.sarif
+          grype scan ./src --output-format sarif > grype-results.sarif 2>&1
           # Ensure SARIF file exists (create empty if grype produced no output)
           [ -f grype-results.sarif ] || touch grype-results.sarif
 
