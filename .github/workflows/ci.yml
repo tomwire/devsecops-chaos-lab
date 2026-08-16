@@ -192,8 +192,13 @@ jobs:
           output-file: grype-results.sarif
           severity-cutoff: critical
           fail-build: false
-      - name: Copy Grype SARIF to root
-        run: cp src/grype-results.sarif ./grype-results.sarif 2>/dev/null || true
+      - name: Move Grype SARIF to workflow root
+        run: |
+          if [ -f "src/grype-results.sarif" ]; then
+            mv src/grype-results.sarif ./grype-results.sarif
+          else
+            echo "Grype SARIF already in root or not found"
+          fi
 
       - name: Upload Grype results to GitHub Security
         if: success()
