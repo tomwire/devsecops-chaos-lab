@@ -185,11 +185,16 @@ jobs:
           grype db update || true  # non-fatal if DB is already current
 
       - name: Run Grype dependency scan
-        run: |
-          set +e
-          grype scan ./src --output-format sarif > grype-results.sarif 2>&1
-          # Ensure SARIF file exists (create empty if grype produced no output)
-          [ -f grype-results.sarif ] || touch grype-results.sarif
+        id: grype
+        uses: anchore/scan-action@v5.0.1
+        with:
+          path: "./src"
+          output-format: sarif
+          severity-cutoff: critical
+          fail-build: false
+
+      - name: Copy Grype SARIF to root for upload
+        run: cp "${{ steps.grype.outputs.sarif }}" ./grype-results.sarif 2>/dev/null || true
 
       - name: Upload Grype results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4

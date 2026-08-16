@@ -17,7 +17,7 @@ COPY . .
 # ---------------------------------------------------------------------------
 # Validation step — if this fails, image is rejected before it ships
 # ---------------------------------------------------------------------------
-RUN node -e "require('./app.js')" && echo "✅ App loads successfully" || true
+RUN node -e "require('./app.js'); process.exit(0)" && echo "✅ App loads successfully"
 
 # ---------------------------------------------------------------------------
 # Stage 2: Distroless (no shell, no package manager, no node_modules tree)
