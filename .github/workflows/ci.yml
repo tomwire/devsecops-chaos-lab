@@ -168,6 +168,7 @@ jobs:
         run: |
           curl -sSfL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 -o /tmp/osv-scanner && chmod +x /tmp/osv-scanner
           cd src && /tmp/osv-scanner --format sarif --output osv-results.sarif .
+          cp ../src/osv-results.sarif ./osv-results.sarif 2>/dev/null || true
 
       - name: Upload OSV results to GitHub Security
         if: success()
@@ -190,6 +191,8 @@ jobs:
           output-file: grype-results.sarif
           severity-cutoff: critical
           fail-build: false
+      - name: Copy Grype SARIF to root
+        run: cp ../src/grype-results.sarif ./grype-results.sarif 2>/dev/null || true
 
       - name: Upload Grype results to GitHub Security
         if: success()
