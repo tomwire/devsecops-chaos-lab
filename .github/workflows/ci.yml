@@ -178,23 +178,17 @@ jobs:
           sarif_file: "osv-results.sarif"
           category: "dependency-scanning"
 
-      # Grype (Syft) scan of source dependencies
-      - name: Update Grype vulnerability database
+      # Grype dependency scan of source dependencies
+      - name: Install and update Grype database
         run: |
           curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
           grype db update || true  # non-fatal if DB is already current
 
       - name: Run Grype dependency scan
-        id: grype
-        uses: anchore/scan-action@v5.0.1
-        with:
-          path: "./src"
-          output-format: sarif
-          output-file: grype-results.sarif
-          severity-cutoff: critical
-          fail-build: false
+        run: |
+          grype scan ./src -o sarif > grype-results.sarif
+
       - name: Upload Grype results to GitHub Security
-        if: success()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "grype-results.sarif"
