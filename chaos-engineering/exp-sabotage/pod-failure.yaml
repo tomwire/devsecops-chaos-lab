@@ -1,0 +1,53 @@
+# =============================================================================
+# LitmusChaos Experiment — Pod Failure
+# ============================================================
+# Target: sample-app pods
+# Action: Delete one pod at a time
+# Expected: Kubernetes auto-replaces; readyReplicas recovers within 90s
+# ============================================================
+
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: sample-app-pod-failure
+  namespace: secops-dev
+spec:
+  appinfo:
+    appns: secops-dev
+    applabel: "app=sample-app"
+    appkind: deployment
+  engineState: "active"
+  chaosServiceAccount: pod-delete-sa
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            # Target one pod at a time (percentage-based)
+            - name: TOTAL_CHAOS_DURATION
+              value: "60"           # Experiment duration in seconds
+            - name: CHAOS_INTERVAL
+              value: "10"           # Time between pod kills
+            - name: INSTANCE_COUNT
+              value: "1"            # Pods to delete per cycle
+            - name: FORCE
+              value: "false"        # Don't force kill; use graceful termination
+            
+            # Health checks
+            - name: HEALTH_CHECK_TIMEOUT
+              value: "120"          # Seconds to wait for health check recovery
+            
+            # Pre-check: verify app is healthy before starting chaos
+            - name: PRE_CHAOS_CHECKS
+              value: "true"         # Run health probe before experiment
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pod-delete-sa
+  namespace: secops-dev
+  labels:
+    name: pod-delete-sa
+    app.kubernetes.io/part-of: litmus

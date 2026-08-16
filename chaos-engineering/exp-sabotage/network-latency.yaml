@@ -1,0 +1,57 @@
+# =============================================================================
+# LitmusChaos Experiment — Network Latency Injection
+# ============================================================
+# Target: sample-app pods → service endpoints
+# Action: Inject 500ms latency on network traffic
+# Expected: Health probes still pass; app handles degraded performance gracefully
+# ============================================================
+
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: sample-app-network-latency
+  namespace: secops-dev
+spec:
+  appinfo:
+    appns: secops-dev
+    applabel: "app=sample-app"
+    appkind: deployment
+  engineState: "active"
+  chaosServiceAccount: network-latency-sa
+  experiments:
+    - name: network-latency
+      spec:
+        components:
+          env:
+            # Latency parameters
+            - name: NETWORK_LATENCY
+              value: "500"           # Injected latency in milliseconds
+            - name: LATENCY_DIRECTION
+              value: "both"          # Both inbound and outbound
+            - name: TOTAL_CHAOS_DURATION
+              value: "60"
+            - name: CHAOS_INTERVAL
+              value: "10"
+            
+            # Target traffic type — inject into pod↔service path
+            - name: TARGET_CONTAINER
+              value: ""              # All containers in target pods
+            
+            # Network rules: apply to all traffic to/from target
+            - name: NETWORK_INTERFACE
+              value: ""
+            
+            # Probes and validation
+            - name: HEALTH_CHECK_TIMEOUT
+              value: "120"
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: network-latency-sa
+  namespace: secops-dev
+  labels:
+    name: network-latency-sa
+    app.kubernetes.io/part-of: litmus

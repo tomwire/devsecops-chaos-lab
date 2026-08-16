@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tgz
+coverage/
+.nyc_output/
+.env*
+**/*.log
+.DS_Store
+Thumbs.db
+vendor/
+.cache/
+.parcel-cache/
