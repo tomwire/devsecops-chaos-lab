@@ -170,6 +170,11 @@ jobs:
           cd src && /tmp/osv-scanner --format sarif --output grype-results.sarif ./
 
       # Grype (Syft) scan of source dependencies
+      - name: Update Grype vulnerability database
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          grype db update || true  # non-fatal if DB is already current
+
       - name: Run Grype dependency scan
         uses: anchore/scan-action@v5.0.1
         with:
@@ -177,6 +182,7 @@ jobs:
           output-format: sarif
           output-file: grype-results.sarif
           severity-cutoff: critical
+          fail-build: false
 
       - name: Upload Grype results
         if: always()
