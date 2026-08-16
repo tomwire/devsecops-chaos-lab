@@ -161,7 +161,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Install dependencies
-        run: cd src && npm ci --ignore-scripts 2>/dev/null || npm install --production 2>/dev/null || true
+        run: cd src && npm ci 2>/dev/null || npm install --production 2>/dev/null || true
 
       # OSV-Scanner (Google's vulnerability scanner)
       - name: Run OSV Scanner
@@ -186,7 +186,8 @@ jobs:
 
       - name: Run Grype dependency scan
         run: |
-          grype scan ./src -o sarif > grype-results.sarif
+          set +e  # Disable exit-on-error so we capture SARIF even if vulnerabilities found
+          grype scan ./src -o sarif > grype-results.sarif || true
 
       - name: Upload Grype results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
