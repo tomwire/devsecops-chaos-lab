@@ -171,12 +171,12 @@ jobs:
 
       # Grype (Syft) scan of source dependencies
       - name: Run Grype dependency scan
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v5.0.1
         with:
           path: "./src"
-          format: "sarif"
-          output: "grype-results.sarif"
-          severity: "CRITICAL,HIGH"
+          output-format: sarif
+          output-file: grype-results.sarif
+          severity-cutoff: critical
 
       - name: Upload Grype results
         if: always()
