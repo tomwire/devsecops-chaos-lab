@@ -194,10 +194,15 @@ jobs:
           fail-build: false
       - name: Move Grype SARIF to workflow root
         run: |
+          ls -la *.sarif 2>/dev/null || echo "No SARIF files in root"
           if [ -f "src/grype-results.sarif" ]; then
             mv src/grype-results.sarif ./grype-results.sarif
+            echo "Moved from src/"
+          elif [ -f "grype-results.sarif" ]; then
+            echo "Already in root"
           else
-            echo "Grype SARIF already in root or not found"
+            echo "ERROR: Grype SARIF not found!"
+            exit 1
           fi
 
       - name: Upload Grype results to GitHub Security
