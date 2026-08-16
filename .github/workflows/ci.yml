@@ -30,22 +30,23 @@ jobs:
 
       # Portfolio mode: build local image without ECR
       - name: Build application image (portfolio mode)
-        if: ${{ secrets.AWS_ROLE_ARN == '' }}
+        id: build-local
+        if: ${{ secrets.AWS_ROLE_ARN == '' || secrets.AWS_ROLE_ARN == null }}
         run: |
           docker build -t $IMAGE_NAME:test ./src/
 
       # Conditional ECR push when credentials configured
       - name: Configure AWS credentials for ECR
         id: aws-auth
-        if: ${{ secrets.AWS_ROLE_ARN != '' }}
+        if: ${{ secrets.AWS_ROLE_ARN != '' && secrets.AWS_ROLE_ARN != null }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-2
 
       - name: Login to Amazon ECR
-        if: steps.aws-auth.outcome == 'success'
         id: login-ecr
+        if: steps.aws-auth.outcome == 'success'
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build & push image to ECR (production mode)
@@ -84,7 +85,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [providers, environments/dev]
+        target: [providers, environments/dev, environments/staging, environments/prod]
     steps:
       - uses: actions/checkout@v4
 

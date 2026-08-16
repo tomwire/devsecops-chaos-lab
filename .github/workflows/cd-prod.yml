@@ -40,8 +40,9 @@ jobs:
             exit 1
           fi
 
-          # Check for multiple approvers (GitHub's required reviewers pattern)
-          RECOMMENDED_APPROVERS=${{ secrets.APPROVAL_TEAM }}
+          # Note: For full security, configure Environment Protection Rules
+          # in Repository Settings → Actions → Approvals
+          # This workflow triggers the approval gate via GitHub's built-in mechanism
           ACTOR="${{ github.actor }}"
 
           echo "✅ Promotion initiated by ${ACTOR}"
