@@ -167,7 +167,14 @@ jobs:
       - name: Run OSV Scanner
         run: |
           curl -sSfL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 -o /tmp/osv-scanner && chmod +x /tmp/osv-scanner
-          cd src && /tmp/osv-scanner --format sarif --output grype-results.sarif ./
+          cd src && /tmp/osv-scanner --format sarif --output osv-results.sarif .
+
+      - name: Upload OSV results to GitHub Security
+        if: success()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: "osv-results.sarif"
+          category: "dependency-scanning"
 
       # Grype (Syft) scan of source dependencies
       - name: Update Grype vulnerability database
@@ -184,8 +191,8 @@ jobs:
           severity-cutoff: critical
           fail-build: false
 
-      - name: Upload Grype results
-        if: always()
+      - name: Upload Grype results to GitHub Security
+        if: success()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: "grype-results.sarif"
