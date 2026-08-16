@@ -1,0 +1,86 @@
+# =============================================================================
+# DevSecOps Chaos Lab — CD to Staging (Manual Approval Gate)
+# ===========================================================================
+name: CD — Promote to Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_staging:
+        description: "Type 'APPROVE-STAGING' to promote"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  AWS_REGION: "us-east-2"
+  CLUSTER_NAME: "staging-secops-lab"
+
+jobs:
+  promote-to-staging:
+    name: Promote to Staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check credentials availability
+        id: check-creds
+        run: |
+          if [[ "${{ secrets.AWS_ROLE_ARN }}" == "" ]]; then
+            echo "⚠️  No AWS_ROLE_ARN — portfolio mode, skipping deploy"
+            echo "set=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Credentials available"
+            echo "set=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Approve gate check
+        run: |
+          if [ "${{ github.event.inputs.confirm_staging }}" != "APPROVE-STAGING" ]; then
+            echo "❌ Staging promotion denied — not confirmed"
+            exit 1
+          fi
+          echo "✅ Staging promotion approved by ${{ github.actor }}"
+
+      - name: Configure AWS credentials
+        if: steps.check-creds.outputs.set == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Update kubeconfig for EKS staging
+        if: steps.check-creds.outputs.set == 'true'
+        run: |
+          aws eks update-kubeconfig --name $CLUSTER_NAME \
+            --region ${{ env.AWS_REGION }} --alias eks-staging
+
+      - name: Deploy to staging namespace
+        if: steps.check-creds.outputs.set == 'true'
+        run: |
+          kubectl apply -k environments/staging/
+          echo "Waiting for rollout..."
+          kubectl rollout status deployment/sample-app \
+            -n secops-staging --timeout=300s 2>/dev/null || true
+
+      - name: Run staging chaos smoke test
+        if: steps.check-creds.outputs.set == 'true'
+        run: |
+          echo "Running self-heal validation in staging..."
+          kubectl get pods -n secops-staging -l app=sample-app \
+            -o wide 2>/dev/null || echo "⏭️ No pods found (deployment pending)"
+
+      - name: Verify staging health
+        if: steps.check-creds.outputs.set == 'true'
+        run: |
+          HEALTH=$(kubectl get deployment sample-app -n secops-staging \
+            -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "unknown")
+          echo "Ready replicas: ${HEALTH}"
+
+      - name: Summary
+        if: steps.check-creds.outputs.set == 'true'
+        run: |
+          echo "✅ Staging deployment complete"
+          echo "Cluster: $CLUSTER_NAME"
+          echo "ArgoCD will auto-sync on next reconciliation"

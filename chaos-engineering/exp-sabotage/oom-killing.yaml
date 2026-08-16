@@ -1,0 +1,53 @@
+# =============================================================================
+# LitmusChaos Experiment — OOM Kill
+# ============================================================
+# Target: sample-app pods
+# Action: Force kernel OOM kill by exhausting pod memory beyond limit
+# Expected: Container restarts; node remains stable; no cascade failures
+# ============================================================
+
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: sample-app-oom-kill
+  namespace: secops-dev
+spec:
+  appinfo:
+    appns: secops-dev
+    applabel: "app=sample-app"
+    appkind: deployment
+  engineState: "active"
+  chaosServiceAccount: oom-kill-sa
+  experiments:
+    - name: container-kill
+      spec:
+        components:
+          env:
+            # OOM kill configuration
+            - name: TARGET_CONTAINERS
+              value: "sample-app"     # Target specific container
+            - name: KILL_SIGNAL
+              value: "SIGKILL"       # Force kill (triggers OOM-like restart)
+            - name: TOTAL_CHAOS_DURATION
+              value: "60"
+            - name: CHAOS_INTERVAL
+              value: "10"
+            
+            # Memory pressure: set low limit to trigger OOM
+            - name: MEMORY_LIMIT_PERCENTAGE
+              value: "95"            # Set container memory limit at 95% of node allocatable
+            
+            # Probe configuration
+            - name: HEALTH_CHECK_TIMEOUT
+              value: "120"
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oom-kill-sa
+  namespace: secops-dev
+  labels:
+    name: oom-kill-sa
+    app.kubernetes.io/part-of: litmus

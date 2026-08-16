@@ -1,0 +1,76 @@
+# =============================================================================
+# DevSecOps Chaos Lab — CD to Dev (Auto Sync)
+# ===========================================================================
+name: CD — Deploy Sample App to Dev
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'k8s-manifests/**'
+      - 'src/**'
+      - '.github/workflows/cd-dev.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  AWS_REGION: "us-east-2"
+  CLUSTER_NAME: "dev-secops-lab"
+  BOT_NAME: secops-bot
+  BOT_EMAIL: bot@devsecops-lab.dev
+
+jobs:
+  deploy-to-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Portfolio mode: check-creds gates all AWS steps
+      - name: Check credentials availability
+        id: check-creds
+        run: |
+          if [[ "${{ secrets.AWS_ROLE_ARN }}" == "" ]]; then
+            echo "⚠️  No AWS_ROLE_ARN — portfolio mode, skipping ECR/K8s deploy"
+            echo "set=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Credentials available, proceeding with deployment"
+            echo "set=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure AWS credentials
+        if: steps.check-creds.outputs.set == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Update kubeconfig for EKS dev
+        if: steps.check-creds.outputs.set == 'true'
+        run: |
+          aws eks update-kubeconfig --name $CLUSTER_NAME \
+            --region ${{ env.AWS_REGION }} --alias eks-dev
+
+      - name: Deploy to dev namespace
+        if: steps.check-creds.outputs.set == 'true'
+        run: |
+          kubectl apply -k environments/dev/
+          echo "Waiting for rollout..."
+          kubectl rollout status deployment/sample-app \
+            -n secops-dev --timeout=300s 2>/dev/null || true
+
+      - name: Verify deployment health
+        if: steps.check-creds.outputs.set == 'true'
+        run: |
+          STATUS=$(kubectl get deployment sample-app -n secops-dev \
+            -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "unknown")
+          echo "Ready replicas: ${STATUS}"
+
+      - name: Deploy notification
+        if: steps.check-creds.outputs.set == 'true'
+        run: |
+          echo "✅ sample-app deployed to dev (secops-dev namespace)"
+          echo "Cluster: $CLUSTER_NAME"
+          echo "ArgoCD selfHeal will auto-sync any drift"

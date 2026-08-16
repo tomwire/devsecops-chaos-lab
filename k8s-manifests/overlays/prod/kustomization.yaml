@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: secops-prod
+
+resources:
+  - ../../base
+
+patches:
+  # Prod: 3 replicas, HA-ready, strict resource limits
+  - path: patch-replicas.yaml
+    target:
+      kind: Deployment
+      name: sample-app
+  - path: patch-resources.yaml
+    target:
+      kind: Deployment
+      name: sample-app
