@@ -9,7 +9,8 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 COPY package.json ./
-RUN npm ci --ignore-scripts
+COPY package-lock.json ./
+RUN npm ci
 
 COPY . .
 

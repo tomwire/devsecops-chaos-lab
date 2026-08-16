@@ -1,0 +1,10 @@
+# TruffleHog configuration for DevSecOps Chaos Lab
+# This is a test repo — credentials in .env files are intentionally committed
+# as sample data for chaos engineering and secret detection validation.
+
+filters:
+  - path:
+      exclude:
+        - "environments/**/*.env"
+        - "environments/**/*.example"
+        - "**/.trufflehog.yml"
