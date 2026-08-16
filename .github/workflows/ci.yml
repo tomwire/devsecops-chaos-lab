@@ -192,19 +192,11 @@ jobs:
           output-file: grype-results.sarif
           severity-cutoff: critical
           fail-build: false
-      - name: Move Grype SARIF to workflow root
+      - name: Verify Grype SARIF exists
         run: |
-          echo "=== Files in root ==="
-          ls -la *.sarif 2>/dev/null || echo "None"
-          echo "=== Files in src/ ==="
-          ls -la src/*.sarif 2>/dev/null || echo "None"
-          if [ -f "src/grype-results.sarif" ]; then
-            mv src/grype-results.sarif ./grype-results.sarif
-            echo "Moved from src/"
-          elif [ -f "grype-results.sarif" ]; then
-            echo "Already in root - no move needed"
-          else
-            echo "ERROR: Grype SARIF not found anywhere!"
+          ls -la *.sarif 2>/dev/null || echo "No SARIF files in root"
+          if [ ! -f "grype-results.sarif" ]; then
+            echo "ERROR: grype-results.sarif not found in workflow root!"
             exit 1
           fi
 
