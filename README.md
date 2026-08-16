@@ -409,4 +409,14 @@ This project forms part of a cohesive portfolio:
 
 ---
 
-_Licensed under MIT. Built with ☕ and security consciousness._
+---
+
+_Built with ❤️ by Thomas Wire — Platform Engineering Portfolio_
+
+| Repo | Focus |
+|------|-------|
+| **[enterprise-terraform-aws](https://github.com/twire/enterprise-terraform-aws)** | Infrastructure as Code |
+| **[eks-observability](https://github.com/twire/eks-observability)** | Platform Observability |
+| **[multi-gitops-pipeline](https://github.com/twire/multi-gitops-pipeline)** | GitOps Workflows |
+| **[developer-portal](https://github.com/twire/developer-portal)** | Developer Experience |
+| **devsecops-chaos-lab** ⬅️ You are here | Security & Chaos Engineering |
