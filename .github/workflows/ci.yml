@@ -40,7 +40,7 @@ jobs:
 
       - name: Run Trivy scan (local image)
         if: ${{ env.HAS_AWS_ROLE == '' }}
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: "${{ env.IMAGE_NAME }}:test"
           format: "sarif"
@@ -73,7 +73,7 @@ jobs:
 
       - name: Run Trivy scan (ECR image)
         if: steps.aws-auth.outcome == 'success'
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: "${{ steps.login-ecr.outputs.registry }}/${IMAGE_NAME}:${GITHUB_SHA}"
           format: "sarif"
@@ -218,7 +218,7 @@ jobs:
       # in git history for chaos engineering validation. Scan reports findings
       # but does not fail the pipeline.
       - name: TruffleHog scan
-        uses: trufflesecurity/trufflehog@main
+        uses: trufflesecurity/trufflehog@20652fbbdefffcdaa493a5bf57ab2ac6b1db715b # v3.97.1
         with:
           extra_args: --only-verified
 
